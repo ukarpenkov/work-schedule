@@ -65,7 +65,7 @@ const Timeline = ({ plan, fact }) => {
                     backgroundColor: '#f7f9fc',
                     boxShadow: 1,
                     '&::-webkit-scrollbar': {
-                        height: 6,
+                        height: 12,
                     },
                     '&::-webkit-scrollbar-thumb': {
                         backgroundColor: '#b0b0b0',
