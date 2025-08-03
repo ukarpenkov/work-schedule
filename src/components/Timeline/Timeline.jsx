@@ -1,20 +1,13 @@
 import React from 'react'
 import { Box, List, ListItem, ListItemText, Paper, Typography } from '@mui/material'
-import dayjs from 'dayjs' // Удобная библиотека для работы с датами
-import { getEarliestAndLatestDates } from '../../utils/utilsFunctions'
+import dayjs from 'dayjs'
+import { checkWorkTime, findScledureByDate, getEarliestAndLatestDates, setColorByVerdict } from '../../utils/utilsFunctions'
 
 const Timeline = ({ plan, fact }) => {
     const limitDates = getEarliestAndLatestDates(plan)
     const start = dayjs(limitDates.earliest)
     const end = dayjs(limitDates.latest)
 
-    if (!start.isValid() || !end.isValid()) {
-        return (
-            <Typography color="error" align="center">
-                Неверный формат даты. Используйте ISO формат, например: 2025-08-08T11:01:00
-            </Typography>
-        )
-    }
     const dates = []
     let currentDate = start.startOf('day')
     const safeEnd = end.endOf('day')
@@ -55,7 +48,7 @@ const Timeline = ({ plan, fact }) => {
                         display: 'grid',
                     }}
                 >
-                    {plan.schedule.map((employee) => (
+                    {plan.schedule.map((employee, index) => (
                         <ListItem
                             key={employee.role + employee.employee}
                             sx={{
@@ -92,41 +85,53 @@ const Timeline = ({ plan, fact }) => {
                                     }
                                 />
                             </div>
-                            {dates.map((date) => (
-                                <ListItem
-                                    key={date}
-                                    sx={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        minWidth: 200,
-                                        maxWidth: 200,
-                                        alignItems: 'center',
-                                        padding: 1,
-                                        border: '1px solid #e0e0e0',
-                                        borderRadius: 1,
-                                        marginRight: 1,
-                                        backgroundColor: '#ffffff',
-                                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                                        '&:hover': {
-                                            backgroundColor: '#f0f4f8',
-                                            transition: 'all 0.2s ease',
-                                        },
-                                    }}
-                                >
-                                    <ListItemText
-                                        primary={
-                                            <Typography variant="body2" fontWeight="bold" align="center" noWrap>
-                                                {dayjs(date).format('DD')}
-                                            </Typography>
-                                        }
-                                        secondary={
-                                            <Typography variant="caption" color="textSecondary" align="center" noWrap>
-                                                {dayjs(date).format('MM')}.{dayjs(date).format('YYYY')}
-                                            </Typography>
-                                        }
-                                    />
-                                </ListItem>
-                            ))}
+                            {dates.map((date) => {
+                                const currentTimesheetResult = checkWorkTime(date, employee, fact.schedule[index])
+                                const verdict = currentTimesheetResult[0]
+                                const timeDifference = currentTimesheetResult[1]
+
+                                return (
+                                    <ListItem
+                                        key={date}
+                                        sx={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            minWidth: 200,
+                                            maxWidth: 200,
+                                            alignItems: 'center',
+                                            padding: 1,
+                                            border: '1px solid #e0e0e0',
+                                            borderRadius: 1,
+                                            marginRight: 1,
+                                            backgroundColor: setColorByVerdict(verdict),
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                                            '&:hover': {
+                                                backgroundColor: '#f0f4f8',
+                                                transition: 'all 0.2s ease',
+                                            },
+                                        }}
+                                    >
+                                        <ListItemText
+                                            primary={
+                                                <Typography variant="body2" fontWeight="bold" align="center" noWrap>
+                                                    {dayjs(date).format('DD')}.{dayjs(date).format('MM')}.{dayjs(date).format('YYYY')}
+                                                </Typography>
+                                            }
+                                            secondary={
+                                                <Typography variant="body2" fontWeight="bold" align="center" noWrap>
+                                                    {findScledureByDate(employee, date)
+                                                        ? ` План: ${findScledureByDate(employee, date)}`
+                                                        : null}
+                                                    <br />
+                                                    {findScledureByDate(fact.schedule[index], date)
+                                                        ? ` Факт: ${findScledureByDate(fact.schedule[index], date)}`
+                                                        : null}
+                                                </Typography>
+                                            }
+                                        />
+                                    </ListItem>
+                                )
+                            })}
                         </ListItem>
                     ))}
                 </List>
