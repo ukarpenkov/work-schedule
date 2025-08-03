@@ -81,15 +81,31 @@ export function checkWorkTime(dateStr, plannedData, factData) {
 export function setColorByVerdict(verdict) {
     switch (verdict) {
         case 'onTime':
-            return 'green'
+            return '#c5e1a5'
             break
         case 'lateness':
-            return 'red'
+            return '#f381a7'
             break
         case 'leftEarly':
-            return 'yellow'
+            return '#ffc570'
             break
         default:
             return 'wheat'
+    }
+}
+
+export function setTagTextByVerdict(verdict) {
+    switch (verdict) {
+        case 'onTime':
+            return 'ОК'
+            break
+        case 'lateness':
+            return 'опоздание на'
+            break
+        case 'leftEarly':
+            return 'ушел раньше на'
+            break
+        default:
+            return null
     }
 }

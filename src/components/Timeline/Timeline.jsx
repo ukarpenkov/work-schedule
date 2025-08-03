@@ -1,33 +1,66 @@
-import React from 'react'
-import { Box, List, ListItem, ListItemText, Paper, Typography } from '@mui/material'
+import React, { useState } from 'react'
+import { Box, Chip, List, ListItem, ListItemText, Paper, Typography } from '@mui/material'
+import { DatePicker } from '@mui/x-date-pickers/DatePicker'
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import dayjs from 'dayjs'
-import { checkWorkTime, findScledureByDate, getEarliestAndLatestDates, setColorByVerdict } from '../../utils/utilsFunctions'
+import {
+    checkWorkTime,
+    findScledureByDate,
+    getEarliestAndLatestDates,
+    setColorByVerdict,
+    setTagTextByVerdict,
+} from '../../utils/utilsFunctions'
 
 const Timeline = ({ plan, fact }) => {
     const limitDates = getEarliestAndLatestDates(plan)
     const start = dayjs(limitDates.earliest)
     const end = dayjs(limitDates.latest)
 
-    const dates = []
-    let currentDate = start.startOf('day')
-    const safeEnd = end.endOf('day')
+    const [dateFrom, setDateFrom] = useState(start)
+    const [dateTo, setDateTo] = useState(end)
+    const generateDates = (startDate, endDate) => {
+        const dates = []
+        let currentDate = dayjs(startDate).startOf('day')
+        const safeEnd = dayjs(endDate).endOf('day')
 
-    while (currentDate.isBefore(safeEnd) || currentDate.isSame(safeEnd, 'day')) {
-        dates.push(currentDate.format('YYYY-MM-DD'))
-        currentDate = currentDate.add(1, 'day')
+        while (currentDate.isBefore(safeEnd) || currentDate.isSame(safeEnd, 'day')) {
+            dates.push(currentDate.format('YYYY-MM-DD'))
+            currentDate = currentDate.add(1, 'day')
+        }
+        return dates
     }
+    const filteredDates = generateDates(dateFrom, dateTo)
 
     return (
         <Box sx={{ width: '100%', overflow: 'hidden', padding: 2 }}>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h5" gutterBottom>
                 Рабочий график
             </Typography>
+            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                        label="Дата от"
+                        value={dateFrom}
+                        onChange={(newValue) => setDateFrom(newValue)}
+                        minDate={start}
+                        maxDate={dateTo || end}
+                    />
+                    <DatePicker
+                        label="Дата до"
+                        value={dateTo}
+                        onChange={(newValue) => setDateTo(newValue)}
+                        minDate={dateFrom || start}
+                        maxDate={end}
+                    />
+                </LocalizationProvider>
+            </Box>
+
             <Paper
                 sx={{
                     display: 'flex',
                     overflowX: 'auto',
                     padding: 1,
-                    height: 1000,
                     borderRadius: 2,
                     backgroundColor: '#f7f9fc',
                     boxShadow: 1,
@@ -43,11 +76,7 @@ const Timeline = ({ plan, fact }) => {
                     },
                 }}
             >
-                <List
-                    sx={{
-                        display: 'grid',
-                    }}
-                >
+                <List sx={{ display: 'grid' }}>
                     {plan.schedule.map((employee, index) => (
                         <ListItem
                             key={employee.role + employee.employee}
@@ -67,6 +96,7 @@ const Timeline = ({ plan, fact }) => {
                                 '&:hover': {
                                     backgroundColor: '#f0f4f8',
                                     transition: 'all 0.2s ease',
+                                    cursor: 'pointer',
                                 },
                             }}
                         >
@@ -85,10 +115,10 @@ const Timeline = ({ plan, fact }) => {
                                     }
                                 />
                             </div>
-                            {dates.map((date) => {
+                            {filteredDates.map((date) => {
                                 const currentTimesheetResult = checkWorkTime(date, employee, fact.schedule[index])
                                 const verdict = currentTimesheetResult[0]
-                                const timeDifference = currentTimesheetResult[1]
+                                const differentTime = currentTimesheetResult[1]
 
                                 return (
                                     <ListItem
@@ -98,6 +128,8 @@ const Timeline = ({ plan, fact }) => {
                                             flexDirection: 'column',
                                             minWidth: 200,
                                             maxWidth: 200,
+                                            maxHeight: 100,
+                                            minHeight: 100,
                                             alignItems: 'center',
                                             padding: 1,
                                             border: '1px solid #e0e0e0',
@@ -105,9 +137,11 @@ const Timeline = ({ plan, fact }) => {
                                             marginRight: 1,
                                             backgroundColor: setColorByVerdict(verdict),
                                             boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                                            transition: 'filter 0.2s ease',
                                             '&:hover': {
-                                                backgroundColor: '#f0f4f8',
+                                                filter: 'brightness(0.75)',
                                                 transition: 'all 0.2s ease',
+                                                cursor: 'pointer',
                                             },
                                         }}
                                     >
@@ -129,6 +163,26 @@ const Timeline = ({ plan, fact }) => {
                                                 </Typography>
                                             }
                                         />
+                                        {setTagTextByVerdict(verdict) && (
+                                            <Chip
+                                                label={
+                                                    setTagTextByVerdict(verdict) === 'ОК'
+                                                        ? setTagTextByVerdict(verdict)
+                                                        : `${setTagTextByVerdict(verdict)} на ${differentTime} мин`
+                                                }
+                                                color="#bababa"
+                                                sx={{
+                                                    height: '15px',
+                                                    borderRadius: '16px',
+                                                    position: 'absolute',
+                                                    right: '10px',
+                                                    bottom: '5px',
+                                                    '& .MuiChip-label': {
+                                                        padding: '0 8px',
+                                                    },
+                                                }}
+                                            />
+                                        )}
                                     </ListItem>
                                 )
                             })}
