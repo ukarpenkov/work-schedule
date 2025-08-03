@@ -36,3 +36,11 @@
         transform: rotate(360deg);
     }
 }
+
+.employee-info-card {
+    margin-right: 10px;
+    max-width: 200px;
+    min-width: 200px;
+    display: grid;
+    justify-items: start;
+}
