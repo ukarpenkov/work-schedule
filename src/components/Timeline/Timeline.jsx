@@ -1,26 +1,18 @@
-import React, { useState, useEffect, useRef, memo } from 'react'
-import { Box, Chip, List, ListItem, ListItemText, Paper, Typography } from '@mui/material'
-import { DatePicker } from '@mui/x-date-pickers/DatePicker'
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import React, { useState } from 'react'
+import { Box, List, ListItem, Paper, Typography } from '@mui/material'
 import dayjs from 'dayjs'
-import {
-    checkWorkTime,
-    findScledureByDate,
-    getEarliestAndLatestDates,
-    setColorByVerdict,
-    setTagTextByVerdict,
-} from '../../utils/utilsFunctions'
+import { checkWorkTime, getEarliestAndLatestDates } from '../../utils/utilsFunctions'
+import { DatePickerRange } from '../DatePickerRange/DatePickerRange'
+import { EmployeeInfoCard } from '../EmployeeInfoCard/EmployeeInfoCard'
+import { TimesheetElement } from '../TimesheetElement/TimesheetElement'
 
 const Timeline = ({ plan, fact }) => {
     const limitDates = getEarliestAndLatestDates(plan)
     const start = dayjs(limitDates.earliest)
     const end = dayjs(limitDates.latest)
-    const [isEmployeeCardVisible, setIsEmployeeCardVisible] = useState(true)
+
     const [dateFrom, setDateFrom] = useState(start)
     const [dateTo, setDateTo] = useState(end)
-    const employeeCardRefs = useRef([])
-
     const generateDates = (startDate, endDate) => {
         const dates = []
         let currentDate = dayjs(startDate).startOf('day')
@@ -32,68 +24,21 @@ const Timeline = ({ plan, fact }) => {
         }
         return dates
     }
-
     const filteredDates = generateDates(dateFrom, dateTo)
-
-    useEffect(() => {
-        employeeCardRefs.current = employeeCardRefs.current.slice(0, plan.schedule.length)
-    }, [plan.schedule])
-
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    const employeeName = entry.target.querySelector('.MuiTypography-body2')?.textContent || 'Неизвестный сотрудник'
-
-                    if (entry.isIntersecting) {
-                        console.log(`Элемент виден: ${employeeName}`)
-                        setIsEmployeeCardVisible(true)
-                    } else {
-                        console.log(`Элемент скрыт: ${employeeName}`)
-                        setIsEmployeeCardVisible(false)
-                    }
-                })
-            },
-            {
-                root: null,
-                rootMargin: '0px',
-            }
-        )
-
-        employeeCardRefs.current.forEach((card) => {
-            if (card) observer.observe(card)
-        })
-
-        return () => {
-            employeeCardRefs.current.forEach((card) => {
-                if (card) observer.unobserve(card)
-            })
-        }
-    }, [plan.schedule, filteredDates])
 
     return (
         <Box sx={{ width: '100%', overflow: 'hidden', padding: 2 }}>
             <Typography variant="h5" gutterBottom>
                 Рабочий график
             </Typography>
-            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker
-                        label="Дата от"
-                        value={dateFrom}
-                        onChange={(newValue) => setDateFrom(newValue)}
-                        minDate={start}
-                        maxDate={dateTo || end}
-                    />
-                    <DatePicker
-                        label="Дата до"
-                        value={dateTo}
-                        onChange={(newValue) => setDateTo(newValue)}
-                        minDate={dateFrom || start}
-                        maxDate={end}
-                    />
-                </LocalizationProvider>
-            </Box>
+            <DatePickerRange
+                dateFrom={dateFrom}
+                dateTo={dateTo}
+                onDateFromChange={setDateFrom}
+                onDateToChange={setDateTo}
+                minDate={start}
+                maxDate={end}
+            />
 
             <Paper
                 sx={{
@@ -139,117 +84,21 @@ const Timeline = ({ plan, fact }) => {
                                 },
                             }}
                         >
-                            <div className="employee-info-card" ref={(el) => (employeeCardRefs.current[index] = el)}>
-                                <ListItemText
-                                    primary={
-                                        <Typography variant="body2" fontWeight="bold">
-                                            {employee.employee}
-                                        </Typography>
-                                    }
-                                    secondary={
-                                        <Typography variant="caption" color="textSecondary">
-                                            {employee.role} <br />
-                                            {employee.store}
-                                        </Typography>
-                                    }
-                                />
-                            </div>
+                            <EmployeeInfoCard employee={employee} />
                             {filteredDates.map((date) => {
                                 const currentTimesheetResult = checkWorkTime(date, employee, fact.schedule[index])
                                 const verdict = currentTimesheetResult[0]
                                 const differentTime = currentTimesheetResult[1]
-
                                 return (
-                                    <ListItem
+                                    <TimesheetElement
                                         key={date}
-                                        sx={{
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            minWidth: 200,
-                                            maxWidth: 200,
-                                            maxHeight: 100,
-                                            minHeight: 100,
-                                            alignItems: 'center',
-                                            padding: 1,
-                                            border: '1px solid #e0e0e0',
-                                            borderRadius: 1,
-                                            marginRight: 1,
-                                            backgroundColor: setColorByVerdict(verdict),
-                                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                                            transition: 'filter 0.2s ease',
-                                            '&:hover': {
-                                                filter: 'brightness(0.75)',
-                                                transition: 'all 0.2s ease',
-                                                cursor: 'pointer',
-                                            },
-                                        }}
-                                    >
-                                        {!isEmployeeCardVisible ? (
-                                            <Chip
-                                                label={employee.employee}
-                                                color="#bababa"
-                                                sx={{
-                                                    height: '15px',
-                                                    borderRadius: '16px',
-                                                    position: 'absolute',
-                                                    left: '10px',
-                                                    '& .MuiChip-label': {
-                                                        padding: '0 8px',
-                                                    },
-                                                    opacity: 0,
-                                                    animation: 'fadeIn 0.7s ease-in forwards',
-                                                    '@keyframes fadeIn': {
-                                                        '0%': {
-                                                            opacity: 0,
-                                                            transform: 'translateX(-10px)',
-                                                        },
-                                                        '100%': {
-                                                            opacity: 1,
-                                                            transform: 'translateX(0)',
-                                                        },
-                                                    },
-                                                }}
-                                            />
-                                        ) : null}
-                                        <ListItemText
-                                            primary={
-                                                <Typography variant="body2" fontWeight="bold" align="center" noWrap>
-                                                    {dayjs(date).format('DD')}.{dayjs(date).format('MM')}.{dayjs(date).format('YYYY')}
-                                                </Typography>
-                                            }
-                                            secondary={
-                                                <Typography variant="body2" fontWeight="bold" align="center" noWrap>
-                                                    {findScledureByDate(employee, date)
-                                                        ? ` План: ${findScledureByDate(employee, date)}`
-                                                        : null}
-                                                    <br />
-                                                    {findScledureByDate(fact.schedule[index], date)
-                                                        ? ` Факт: ${findScledureByDate(fact.schedule[index], date)}`
-                                                        : null}
-                                                </Typography>
-                                            }
-                                        />
-                                        {setTagTextByVerdict(verdict) && (
-                                            <Chip
-                                                label={
-                                                    setTagTextByVerdict(verdict) === 'ОК'
-                                                        ? setTagTextByVerdict(verdict)
-                                                        : `${setTagTextByVerdict(verdict)} на ${differentTime} мин`
-                                                }
-                                                color="#bababa"
-                                                sx={{
-                                                    height: '15px',
-                                                    borderRadius: '16px',
-                                                    position: 'absolute',
-                                                    right: '10px',
-                                                    bottom: '5px',
-                                                    '& .MuiChip-label': {
-                                                        padding: '0 8px',
-                                                    },
-                                                }}
-                                            />
-                                        )}
-                                    </ListItem>
+                                        date={date}
+                                        employee={employee}
+                                        fact={fact}
+                                        verdict={verdict}
+                                        differentTime={differentTime}
+                                        index={index}
+                                    />
                                 )
                             })}
                         </ListItem>
