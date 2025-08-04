@@ -6,7 +6,7 @@ import { DatePickerRange } from '../DatePickerRange/DatePickerRange'
 import { EmployeeInfoCard } from '../EmployeeInfoCard/EmployeeInfoCard'
 import { TimesheetElement } from '../TimesheetElement/TimesheetElement'
 
-const Timeline = ({ plan, fact }) => {
+function Timeline({ plan, fact }) {
     const limitDates = getEarliestAndLatestDates(plan)
     const start = dayjs(limitDates.earliest)
     const end = dayjs(limitDates.latest)
