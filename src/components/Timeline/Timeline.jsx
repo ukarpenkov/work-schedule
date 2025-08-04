@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef, memo } from 'react'
 import { Box, Chip, List, ListItem, ListItemText, Paper, Typography } from '@mui/material'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
@@ -16,9 +16,11 @@ const Timeline = ({ plan, fact }) => {
     const limitDates = getEarliestAndLatestDates(plan)
     const start = dayjs(limitDates.earliest)
     const end = dayjs(limitDates.latest)
-
+    const [isEmployeeCardVisible, setIsEmployeeCardVisible] = useState(true)
     const [dateFrom, setDateFrom] = useState(start)
     const [dateTo, setDateTo] = useState(end)
+    const employeeCardRefs = useRef([])
+
     const generateDates = (startDate, endDate) => {
         const dates = []
         let currentDate = dayjs(startDate).startOf('day')
@@ -30,7 +32,44 @@ const Timeline = ({ plan, fact }) => {
         }
         return dates
     }
+
     const filteredDates = generateDates(dateFrom, dateTo)
+
+    useEffect(() => {
+        employeeCardRefs.current = employeeCardRefs.current.slice(0, plan.schedule.length)
+    }, [plan.schedule])
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    const employeeName = entry.target.querySelector('.MuiTypography-body2')?.textContent || 'Неизвестный сотрудник'
+
+                    if (entry.isIntersecting) {
+                        console.log(`Элемент виден: ${employeeName}`)
+                        setIsEmployeeCardVisible(true)
+                    } else {
+                        console.log(`Элемент скрыт: ${employeeName}`)
+                        setIsEmployeeCardVisible(false)
+                    }
+                })
+            },
+            {
+                root: null,
+                rootMargin: '0px',
+            }
+        )
+
+        employeeCardRefs.current.forEach((card) => {
+            if (card) observer.observe(card)
+        })
+
+        return () => {
+            employeeCardRefs.current.forEach((card) => {
+                if (card) observer.unobserve(card)
+            })
+        }
+    }, [plan.schedule, filteredDates])
 
     return (
         <Box sx={{ width: '100%', overflow: 'hidden', padding: 2 }}>
@@ -100,7 +139,7 @@ const Timeline = ({ plan, fact }) => {
                                 },
                             }}
                         >
-                            <div className="employee-info-card">
+                            <div className="employee-info-card" ref={(el) => (employeeCardRefs.current[index] = el)}>
                                 <ListItemText
                                     primary={
                                         <Typography variant="body2" fontWeight="bold">
@@ -145,6 +184,33 @@ const Timeline = ({ plan, fact }) => {
                                             },
                                         }}
                                     >
+                                        {!isEmployeeCardVisible ? (
+                                            <Chip
+                                                label={employee.employee}
+                                                color="#bababa"
+                                                sx={{
+                                                    height: '15px',
+                                                    borderRadius: '16px',
+                                                    position: 'absolute',
+                                                    left: '10px',
+                                                    '& .MuiChip-label': {
+                                                        padding: '0 8px',
+                                                    },
+                                                    opacity: 0,
+                                                    animation: 'fadeIn 0.7s ease-in forwards',
+                                                    '@keyframes fadeIn': {
+                                                        '0%': {
+                                                            opacity: 0,
+                                                            transform: 'translateX(-10px)',
+                                                        },
+                                                        '100%': {
+                                                            opacity: 1,
+                                                            transform: 'translateX(0)',
+                                                        },
+                                                    },
+                                                }}
+                                            />
+                                        ) : null}
                                         <ListItemText
                                             primary={
                                                 <Typography variant="body2" fontWeight="bold" align="center" noWrap>
