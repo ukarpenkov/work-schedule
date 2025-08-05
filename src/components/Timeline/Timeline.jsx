@@ -5,14 +5,66 @@ import { checkWorkTime, getEarliestAndLatestDates } from '../../utils/utilsFunct
 import { DatePickerRange } from '../DatePickerRange/DatePickerRange'
 import { EmployeeInfoCard } from '../EmployeeInfoCard/EmployeeInfoCard'
 import { TimesheetElement } from '../TimesheetElement/TimesheetElement'
+import { FilePicker } from '../FilePicker/FilePicker'
 
-function Timeline({ plan, fact }) {
-    const limitDates = getEarliestAndLatestDates(plan)
-    const start = dayjs(limitDates.earliest)
-    const end = dayjs(limitDates.latest)
+function Timeline() {
+    const [plan, setPlan] = useState(null)
+    const [fact, setFact] = useState(null)
+    const [showChart, setShowChart] = useState(false)
+    const [dateFrom, setDateFrom] = useState(null)
+    const [dateTo, setDateTo] = useState(null)
 
-    const [dateFrom, setDateFrom] = useState(start)
-    const [dateTo, setDateTo] = useState(end)
+    const handlePlanFileChange = (event) => {
+        const file = event.target.files[0]
+        if (file) {
+            const reader = new FileReader()
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result)
+                    setPlan(data)
+                } catch (error) {
+                    alert('Загружен невалидный JSON')
+                }
+            }
+            reader.readAsText(file)
+        }
+    }
+
+    const handleFactFileChange = (event) => {
+        const file = event.target.files[0]
+        if (file) {
+            const reader = new FileReader()
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result)
+                    setFact(data)
+                } catch (error) {
+                    alert('Загружен невалидный JSON')
+                }
+            }
+            reader.readAsText(file)
+        }
+    }
+
+    const handleShowChart = () => {
+        const limitDates = getEarliestAndLatestDates(plan)
+        setDateFrom(dayjs(limitDates.earliest))
+        setDateTo(dayjs(limitDates.latest))
+        setShowChart(true)
+    }
+
+    if (!showChart) {
+        return (
+            <FilePicker
+                onPlanSelect={handlePlanFileChange}
+                onFactSelect={handleFactFileChange}
+                onShowChart={handleShowChart}
+                plan={plan}
+                fact={fact}
+            />
+        )
+    }
+
     const generateDates = (startDate, endDate) => {
         const dates = []
         let currentDate = dayjs(startDate).startOf('day')
@@ -36,8 +88,8 @@ function Timeline({ plan, fact }) {
                 dateTo={dateTo}
                 onDateFromChange={setDateFrom}
                 onDateToChange={setDateTo}
-                minDate={start}
-                maxDate={end}
+                minDate={dateFrom}
+                maxDate={dateTo}
             />
 
             <Paper
