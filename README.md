@@ -6,7 +6,7 @@
 
 ### Вариант 1 (Локально)
 
-1. Распаковать архив `build.zip` и открыть папку `build`.
+1. Распаковать архив `build.zip` и открыть папку `build` (Архив по ссылке: [[G-DRIVE]](https://drive.google.com/drive/folders/1HlukRQRhpUzx8MKsU5cG0hDMwD_XGIJj?usp=sharing)).
 2. Открыть файл `index.html` в браузере.
 3. Загрузить файлы `plan.json` и `fact.js` (из папки `build`) в соответствующие поля выбора файлов.
 4. Нажать кнопку **ОК**.
